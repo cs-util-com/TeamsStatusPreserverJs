@@ -1,32 +1,31 @@
-# TemplateJs
-TemplateJs is a minimal single-page web app template designed for quick deployment. 
-It follows an AI-assisted iterative development process:
+# Teams Status Preserver
 
-- User stories and requirements drive feature development.
-- Each iteration is a single commit for easy review.
-- AI-assisted coding minimizes manual intervention.
-- The focus is on defining clear requirements rather than manual coding.
+A lightweight browser-based tool that keeps your Microsoft Teams status active when you're away from your computer.
 
-This approach enables rapid prototyping and structured iteration.
+## How It Works
 
-## Using the Template
-1. Fork this repository and open the fork via GitHub CodeSpaces
-2. Go to your repos Settings -> Pages and there in the "Branch" section select the main branch to be auto-deployed by GitHub for you
-3. If your fork is 
-   <br> github.com/**YourUserName**/**YourFork** 
-   <br> then your WebApp should now be live at 
-   <br> **YourUserName**.github.io/**YourFork** 
-4. Install VsCode plugins in CodeSpaces
-   - "**Live Server**" to render the resulting page including live updates while you edit etc
-   - "**GitHub Copilot**" to do smaller iterations inside of CodeSpaces
-5. Edit the index.html and regularly commit and push in CodeSpaces to "release" your latest app version 
+The app simulates user activity (mouse movements, clicks, keystrokes, scrolling) at random intervals to prevent Teams from changing your status to "Away" during periods of inactivity.
 
-## AI Iteration Workflow
-1. Copy `index.html` into ChatGPT.
-2. Modify or extend the requirements listed at the top
-3. Test the changes via Right-Click on the index.html -> "Open with Live Server"
-4. Clean up modifications done by the AI via the "Source Control" -> "Changes" UX of VsCode (in GitHub CodeSpaces)
-5. Commit
+## Key Features
+
+- Configurable event types (mouse, keyboard, scroll)
+- Adjustable timing (5-60 seconds between events)
+- Activity log to track simulated events
+- Works offline and saves preferences locally
+
+## Quick Start
+
+1. Go to [https://cs-util-com.github.io/TeamsStatusPreserverJs](https://cs-util-com.github.io/TeamsStatusPreserverJs)
+2. Keep the tab open while you're away
+3. Use "Settings" to customize behavior
+4. Use "Pause" to temporarily stop the simulation
+
+## For Developers
+
+1. Fork this repository
+2. Enable GitHub Pages (Settings → Pages → select main branch)
+3. Your app will be at: `https://[username].github.io/TeamsStatusPreserverJs`
 
 ## Disclaimer
-TemplateJs is provided as-is. It is a general-purpose template and does not include domain-specific functionality. Use and modify as needed.
+
+This tool is for legitimate use cases like preventing unwanted status changes during presentations or meetings. Use responsibly and according to your organization's policies.
