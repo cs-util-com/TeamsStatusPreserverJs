@@ -37,13 +37,58 @@ additional explanations of what you change are nice to have but not necessary.
       Status: <span id="status" class="text-green-600">Active</span>
     </div>
     
-    <div>
+    <div class="flex items-center">
       <button id="toggleBtn" class="px-4 py-2 bg-blue-600 text-white rounded font-mono mr-2.5 cursor-pointer hover:bg-blue-700">Pause</button>
       <span id="nextEvent"></span>
+      <button id="settingsBtn" class="ml-auto px-4 py-2 bg-gray-600 text-white rounded font-mono cursor-pointer hover:bg-gray-700">Settings</button>
     </div>
     
     <h3 class="mt-4 font-bold">Recent Activity:</h3>
     <div id="eventLog" class="h-24 overflow-y-auto border border-gray-300 p-2.5 mt-2.5 text-xs"></div>
+  </div>
+  
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+      <h2 class="text-xl font-bold mb-4">Settings</h2>
+      
+      <div class="mb-4">
+        <label class="block mb-2">Event Types:</label>
+        <div class="space-y-2">
+          <div>
+            <input type="checkbox" id="enableMouseMove" checked>
+            <label for="enableMouseMove">Mouse movements</label>
+          </div>
+          <div>
+            <input type="checkbox" id="enableMouseClick" checked>
+            <label for="enableMouseClick">Mouse clicks</label>
+          </div>
+          <div>
+            <input type="checkbox" id="enableKeyPress" checked>
+            <label for="enableKeyPress">Key presses</label>
+          </div>
+          <div>
+            <input type="checkbox" id="enableScroll" checked>
+            <label for="enableScroll">Scrolling</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label for="eventFrequency" class="block mb-2">Event Frequency (seconds):</label>
+        <input type="range" id="eventFrequency" min="5" max="60" value="15" class="w-full">
+        <div class="flex justify-between text-xs">
+          <span>5s</span>
+          <span id="freqValue">15s</span>
+          <span>60s</span>
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <button id="closeSettings" class="px-4 py-2 bg-gray-500 text-white rounded font-mono mr-2 hover:bg-gray-600">Cancel</button>
+        <button id="saveSettings" class="px-4 py-2 bg-blue-600 text-white rounded font-mono hover:bg-blue-700">Save</button>
+      </div>
+    </div>
   </div>
   
   <video class="hidden" autoplay loop muted playsinline>
@@ -52,50 +97,215 @@ additional explanations of what you change are nice to have but not necessary.
   </video>
 
   <script>
-    let position = 0;
+    // Configuration and state management
     let active = true;
-    let mouseInterval, keyInterval;
-    let lastMouseEvent = Date.now();
-    let lastKeyEvent = Date.now();
+    let eventIntervals = [];
+    let updateInterval;
+    let lastEvents = {
+      mouseMove: Date.now(),
+      mouseClick: Date.now(),
+      keyPress: Date.now(),
+      scroll: Date.now()
+    };
+    
+    // Track next scheduled times
+    let nextScheduledTimes = {
+      mouseMove: 0,
+      mouseClick: 0,
+      keyPress: 0,
+      scroll: 0
+    };
+    
+    // Settings with defaults
+    let settings = {
+      enableMouseMove: true,
+      enableMouseClick: true,
+      enableKeyPress: true,
+      enableScroll: true,
+      eventFrequency: 15
+    };
     
     // DOM elements
     const statusElement = document.getElementById('status');
     const toggleBtn = document.getElementById('toggleBtn');
     const eventLog = document.getElementById('eventLog');
     const nextEventSpan = document.getElementById('nextEvent');
-
-    // Simulates mouse movement by incrementing position
-    function simulateMouseMove() {
-      if (!active) return;
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettings = document.getElementById('closeSettings');
+    const saveSettings = document.getElementById('saveSettings');
+    const freqSlider = document.getElementById('eventFrequency');
+    const freqValue = document.getElementById('freqValue');
+    
+    // Load saved settings if available
+    loadSettings();
+    
+    // Initialize settings UI
+    function updateSettingsUI() {
+      document.getElementById('enableMouseMove').checked = settings.enableMouseMove;
+      document.getElementById('enableMouseClick').checked = settings.enableMouseClick;
+      document.getElementById('enableKeyPress').checked = settings.enableKeyPress;
+      document.getElementById('enableScroll').checked = settings.enableScroll;
+      freqSlider.value = settings.eventFrequency;
+      freqValue.textContent = `${settings.eventFrequency}s`;
+    }
+    
+    // Load settings from localStorage
+    function loadSettings() {
+      const savedSettings = localStorage.getItem('teamsPreserverSettings');
+      if (savedSettings) {
+        settings = {...settings, ...JSON.parse(savedSettings)};
+      }
+      updateSettingsUI();
+    }
+    
+    // Save settings to localStorage
+    function saveSettingsToStorage() {
+      settings.enableMouseMove = document.getElementById('enableMouseMove').checked;
+      settings.enableMouseClick = document.getElementById('enableMouseClick').checked;
+      settings.enableKeyPress = document.getElementById('enableKeyPress').checked;
+      settings.enableScroll = document.getElementById('enableScroll').checked;
+      settings.eventFrequency = parseInt(freqSlider.value);
       
+      localStorage.setItem('teamsPreserverSettings', JSON.stringify(settings));
+      
+      // Restart intervals with new settings
+      if (active) {
+        clearAllIntervals();
+        startIntervals();
+        logEvent("Settings updated, simulation restarted");
+      } else {
+        logEvent("Settings updated");
+      }
+    }
+
+    // Helper function to get randomized timing
+    function getRandomTiming() {
+      // Base frequency from settings with ±20% variation
+      const baseTime = settings.eventFrequency * 1000;
+      const variance = baseTime * 0.2; // 20% variance
+      return baseTime + (Math.random() * variance * 2 - variance);
+    }
+    
+    // Get a random position within the viewport
+    function getRandomPosition() {
+      return {
+        x: Math.floor(Math.random() * window.innerWidth),
+        y: Math.floor(Math.random() * window.innerHeight)
+      };
+    }
+
+    // Simulates mouse movement with random positions
+    function simulateMouseMove() {
+      if (!active || !settings.enableMouseMove) return;
+      
+      const pos = getRandomPosition();
       const evt = new MouseEvent("mousemove", {
-        clientX: position % window.innerWidth,
-        clientY: position % window.innerHeight,
+        clientX: pos.x,
+        clientY: pos.y,
         bubbles: true,
         cancelable: true,
         view: window
       });
       document.dispatchEvent(evt);
-      position++;
-      lastMouseEvent = Date.now();
+      lastEvents.mouseMove = Date.now();
       
-      logEvent("Mouse event triggered");
+      logEvent("Mouse movement simulated");
+      
+      // Schedule next event with randomized timing
+      if (active && settings.enableMouseMove) {
+        const nextDelay = getRandomTiming();
+        nextScheduledTimes.mouseMove = Date.now() + nextDelay;
+        setTimeout(simulateMouseMove, nextDelay);
+      } else {
+        nextScheduledTimes.mouseMove = 0;
+      }
+      
+      updateNextEventTime();
+    }
+    
+    // Simulates mouse click
+    function simulateMouseClick() {
+      if (!active || !settings.enableMouseClick) return;
+      
+      const pos = getRandomPosition();
+      const evt = new MouseEvent("click", {
+        clientX: pos.x,
+        clientY: pos.y,
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      document.dispatchEvent(evt);
+      lastEvents.mouseClick = Date.now();
+      
+      logEvent("Mouse click simulated");
+      
+      // Schedule next event with randomized timing
+      if (active && settings.enableMouseClick) {
+        const nextDelay = getRandomTiming() * 2; // Less frequent than moves
+        nextScheduledTimes.mouseClick = Date.now() + nextDelay;
+        setTimeout(simulateMouseClick, nextDelay);
+      } else {
+        nextScheduledTimes.mouseClick = 0;
+      }
+      
       updateNextEventTime();
     }
 
-    // Simulates a Shift key press
+    // Simulates a key press (random keys)
     function simulateKeyPress() {
-      if (!active) return;
+      if (!active || !settings.enableKeyPress) return;
+      
+      // Array of safe keys to simulate
+      const keys = ['Shift', 'Control', 'Alt', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
       
       const evt = new KeyboardEvent("keydown", {
-        key: "Shift",
-        code: "ShiftLeft",
+        key: randomKey,
+        code: randomKey + "Left",
         bubbles: true
       });
       document.dispatchEvent(evt);
-      lastKeyEvent = Date.now();
+      lastEvents.keyPress = Date.now();
       
-      logEvent("Keyboard event triggered");
+      logEvent(`Key press (${randomKey}) simulated`);
+      
+      // Schedule next event with randomized timing
+      if (active && settings.enableKeyPress) {
+        const nextDelay = getRandomTiming() * 1.5;
+        nextScheduledTimes.keyPress = Date.now() + nextDelay;
+        setTimeout(simulateKeyPress, nextDelay);
+      } else {
+        nextScheduledTimes.keyPress = 0;
+      }
+      
+      updateNextEventTime();
+    }
+    
+    // Simulates scrolling
+    function simulateScroll() {
+      if (!active || !settings.enableScroll) return;
+      
+      const scrollAmount = Math.floor(Math.random() * 100) - 50; // Random between -50 and 50
+      const evt = new WheelEvent("wheel", {
+        deltaY: scrollAmount,
+        bubbles: true
+      });
+      document.dispatchEvent(evt);
+      lastEvents.scroll = Date.now();
+      
+      logEvent("Scroll event simulated");
+      
+      // Schedule next event with randomized timing
+      if (active && settings.enableScroll) {
+        const nextDelay = getRandomTiming() * 2.5;
+        nextScheduledTimes.scroll = Date.now() + nextDelay;
+        setTimeout(simulateScroll, nextDelay);
+      } else {
+        nextScheduledTimes.scroll = 0;
+      }
+      
       updateNextEventTime();
     }
     
@@ -115,11 +325,40 @@ additional explanations of what you change are nice to have but not necessary.
     // Update the countdown to next event
     function updateNextEventTime() {
       const now = Date.now();
-      const nextMouseIn = 15000 - (now - lastMouseEvent);
-      const nextKeyIn = 60000 - (now - lastKeyEvent);
-      const nextEvent = Math.min(nextMouseIn, nextKeyIn);
+      let nextTimes = [];
       
+      // Only include enabled and scheduled events
+      if (settings.enableMouseMove && nextScheduledTimes.mouseMove > now) {
+        nextTimes.push(nextScheduledTimes.mouseMove - now);
+      }
+      if (settings.enableMouseClick && nextScheduledTimes.mouseClick > now) {
+        nextTimes.push(nextScheduledTimes.mouseClick - now);
+      }
+      if (settings.enableKeyPress && nextScheduledTimes.keyPress > now) {
+        nextTimes.push(nextScheduledTimes.keyPress - now);
+      }
+      if (settings.enableScroll && nextScheduledTimes.scroll > now) {
+        nextTimes.push(nextScheduledTimes.scroll - now);
+      }
+      
+      if (nextTimes.length === 0) {
+        nextEventSpan.textContent = "No events scheduled";
+        return;
+      }
+      
+      const nextEvent = Math.min(...nextTimes);
       nextEventSpan.textContent = `Next event in: ${Math.ceil(nextEvent / 1000)}s`;
+    }
+    
+    // Clear all intervals and reset scheduled times
+    function clearAllIntervals() {
+      clearInterval(updateInterval);
+      nextScheduledTimes = {
+        mouseMove: 0,
+        mouseClick: 0,
+        keyPress: 0,
+        scroll: 0
+      };
     }
     
     // Toggle active state
@@ -140,26 +379,58 @@ additional explanations of what you change are nice to have but not necessary.
         toggleBtn.textContent = "Resume";
         
         // Clear intervals
-        clearInterval(mouseInterval);
-        clearInterval(keyInterval);
-        clearInterval(updateInterval);
+        clearAllIntervals();
         logEvent("Simulation paused");
       }
     }
     
     // Start all intervals
     function startIntervals() {
-      mouseInterval = setInterval(simulateMouseMove, 15000); // every 15 seconds
-      keyInterval = setInterval(simulateKeyPress, 60000); // every 60 seconds
-      updateInterval = setInterval(updateNextEventTime, 1000); // update countdown every second
+      // Start update interval for countdown
+      updateInterval = setInterval(updateNextEventTime, 1000);
       
-      // Trigger initial events
-      simulateMouseMove();
+      // Start each enabled event type with its own timing
+      if (settings.enableMouseMove) {
+        const delay = 1000;
+        nextScheduledTimes.mouseMove = Date.now() + delay;
+        setTimeout(simulateMouseMove, delay);
+      }
+      if (settings.enableMouseClick) {
+        const delay = 2000;
+        nextScheduledTimes.mouseClick = Date.now() + delay;
+        setTimeout(simulateMouseClick, delay);
+      }
+      if (settings.enableKeyPress) {
+        const delay = 3000;
+        nextScheduledTimes.keyPress = Date.now() + delay;
+        setTimeout(simulateKeyPress, delay);
+      }
+      if (settings.enableScroll) {
+        const delay = 4000;
+        nextScheduledTimes.scroll = Date.now() + delay;
+        setTimeout(simulateScroll, delay);
+      }
+      
+      // Initial update
       updateNextEventTime();
     }
     
     // Setup event listeners
     toggleBtn.addEventListener('click', toggleActive);
+    settingsBtn.addEventListener('click', () => {
+      updateSettingsUI();
+      settingsModal.classList.remove('hidden');
+    });
+    closeSettings.addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+    saveSettings.addEventListener('click', () => {
+      saveSettingsToStorage();
+      settingsModal.classList.add('hidden');
+    });
+    freqSlider.addEventListener('input', () => {
+      freqValue.textContent = `${freqSlider.value}s`;
+    });
     
     // Initial setup
     startIntervals();
