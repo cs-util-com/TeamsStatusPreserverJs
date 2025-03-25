@@ -1,147 +1,169 @@
 <!-- User Stories & Requirements for the code below:
 
-- This is a template for a single-page HTML web app.
+- This is a single-page HTML web app.
 - A monospace font should be used.
-- No backend; all data is stored locally.
+- No backend; all data is stored locally (if needed).
+- The app should be usable offline.
 
 Main user stories:
-- ...
+- Prevent Microsoft Teams from marking the user as 'Away' due to inactivity.
+- Simulate user activity through periodic mouse movements and keyboard inputs.
+- Ensure the simulation runs seamlessly in the background without user intervention.
 
 Keep this comment block in the code.
-Simplify the code if possible (without removing the functionality described above). 
+Simplify the code if possible (without removing the functionality described above).
 You MUST keep all comments in the code below, even if you think they are redundant.
-Always respond with the full new html file (including these comments here), 
-additional explanations what you change are nice to have but not necessary. 
+Always respond with the full new HTML file (including these comments here),
+additional explanations of what you change are nice to have but not necessary.
 -->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Decoupled Modules Example with Person Class</title>
-  <!-- Favicon: A white box --> <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23fff'/%3E%3C/svg%3E" type="image/svg+xml">
+  <title>Teams Status Preserver</title>
+  <!-- Favicon: An active status indicator --> 
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2322c55e'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%23dcfce7'/%3E%3Ccircle cx='50' cy='50' r='20' fill='%2322c55e'/%3E%3C/svg%3E" type="image/svg+xml">
   <!-- Added Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @view-transition {
-      navigation: auto;
-    }
-    
-    nav a[aria-current="page"]:after {
-      border-color: white;
-      view-transition-name: posts-nav;
-    }
-    
-    /* Old stuff going out */
-    ::view-transition-old(posts-nav) {
-      animation: fade 0.2s linear forwards;
-      height: 100%;
-    }
-    
-    /* New stuff coming in */
-    ::view-transition-new(posts-nav) {
-      animation: fade 0.3s linear reverse;
-      height: 100%;
-    }
-    
-    @keyframes fade {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-  </style>
-  <script>
-    // Only use if browser supports View Transitions
-    if (document.startViewTransition) {
-      window.addEventListener('click', (e) => {
-        // Only handle internal links
-        if (e.target.tagName === 'A' && e.target.origin === window.location.origin) {
-          e.preventDefault();
-          document.startViewTransition(() => {
-            window.location.href = e.target.href;
-          });
-        }
-      });
-    }
-  </script>
 </head>
-<body class="font-mono p-8 bg-gray-50">
-  <div class="max-w-4xl mx-auto">
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold text-blue-600 mb-4">Template Web App</h1>
-      <nav class="bg-blue-600 text-white p-4 rounded-lg mb-4">
-        <a href="index.html" class="mr-6 hover:underline font-bold relative" aria-current="page">
-          Home
-          <span class="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>
-        </a>
-        <a href="features.html" class="mr-6 hover:underline">Features</a>
-        <a href="about.html" class="hover:underline">About</a>
-      </nav>
-      <div class="bg-blue-100 border-l-4 border-blue-500 p-4 mb-6">
-        <p class="text-sm text-blue-700">This is a Tailwind CSS demonstration with modular JavaScript.</p>
-      </div>
-    </header>
+<body class="p-5 font-mono leading-relaxed max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">Teams Status Preserver</h1>
+  
+  <div class="border border-gray-300 p-5 mt-5 rounded-md">
+    <p><strong>How it works:</strong> This app simulates browser events to keep your Microsoft Teams status active even during periods of inactivity.</p>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <!-- Card 1 -->
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-4 text-gray-800">Greeting Card</h2>
-        <p class="text-gray-600 mb-4">Click the button below to greet the person.</p>
-        <button id="greetBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300">
-          Greet
-        </button>
-      </div>
-      
-      <!-- Card 2 -->
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-4 text-gray-800">Tailwind Features</h2>
-        <ul class="list-disc pl-5 space-y-2 text-gray-600">
-          <li>Responsive design with <span class="font-bold text-blue-500">breakpoints</span></li>
-          <li>Utility-first CSS framework</li>
-          <li>Customizable with configuration</li>
-        </ul>
-        <div class="mt-4">
-          <div class="flex gap-2">
-            <span class="bg-red-200 text-red-800 text-xs p-1 rounded">Tag</span>
-            <span class="bg-green-200 text-green-800 text-xs p-1 rounded">Utility</span>
-            <span class="bg-yellow-200 text-yellow-800 text-xs p-1 rounded">Responsive</span>
-          </div>
-        </div>
-      </div>
+    <div class="p-2.5 my-2.5 bg-gray-100 rounded-md" id="statusDisplay">
+      Status: <span id="status" class="text-green-600">Active</span>
     </div>
     
-    <div class="bg-white p-6 rounded-lg shadow">
-      <h2 class="text-xl font-bold mb-4 text-gray-800">Interactive Components</h2>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
-          Username
-        </label>
-        <input class="w-full p-2 border rounded text-gray-700 focus:outline-none focus:shadow-outline" id="username" type="text" placeholder="Username">
-      </div>
-      <div class="flex justify-between">
-        <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none transition">
-          Save
-        </button>
-        <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none transition">
-          Cancel
-        </button>
-      </div>
+    <div>
+      <button id="toggleBtn" class="px-4 py-2 bg-blue-600 text-white rounded font-mono mr-2.5 cursor-pointer hover:bg-blue-700">Pause</button>
+      <span id="nextEvent"></span>
     </div>
+    
+    <h3 class="mt-4 font-bold">Recent Activity:</h3>
+    <div id="eventLog" class="h-24 overflow-y-auto border border-gray-300 p-2.5 mt-2.5 text-xs"></div>
   </div>
   
-  <!-- Load the main module -->
-  <script type="module">
+  <video class="hidden" autoplay loop muted playsinline>
+    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
 
-    import { tellBirthday } from './utils.js';
-    import { Person } from './person.js';
+  <script>
+    let position = 0;
+    let active = true;
+    let mouseInterval, keyInterval;
+    let lastMouseEvent = Date.now();
+    let lastKeyEvent = Date.now();
+    
+    // DOM elements
+    const statusElement = document.getElementById('status');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const eventLog = document.getElementById('eventLog');
+    const nextEventSpan = document.getElementById('nextEvent');
 
-    // Create a new Person instance with values defined in the HTML.
-    const person = new Person('Alice', 40);
-    document.getElementById('greetBtn').addEventListener('click', () => {
-      alert(tellBirthday(person));
-    });
+    // Simulates mouse movement by incrementing position
+    function simulateMouseMove() {
+      if (!active) return;
+      
+      const evt = new MouseEvent("mousemove", {
+        clientX: position % window.innerWidth,
+        clientY: position % window.innerHeight,
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      document.dispatchEvent(evt);
+      position++;
+      lastMouseEvent = Date.now();
+      
+      logEvent("Mouse event triggered");
+      updateNextEventTime();
+    }
 
+    // Simulates a Shift key press
+    function simulateKeyPress() {
+      if (!active) return;
+      
+      const evt = new KeyboardEvent("keydown", {
+        key: "Shift",
+        code: "ShiftLeft",
+        bubbles: true
+      });
+      document.dispatchEvent(evt);
+      lastKeyEvent = Date.now();
+      
+      logEvent("Keyboard event triggered");
+      updateNextEventTime();
+    }
+    
+    // Log events to the UI
+    function logEvent(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${timestamp}: ${message}`;
+      eventLog.prepend(logEntry);
+      
+      // Limit log entries
+      if (eventLog.children.length > 20) {
+        eventLog.removeChild(eventLog.lastChild);
+      }
+    }
+    
+    // Update the countdown to next event
+    function updateNextEventTime() {
+      const now = Date.now();
+      const nextMouseIn = 15000 - (now - lastMouseEvent);
+      const nextKeyIn = 60000 - (now - lastKeyEvent);
+      const nextEvent = Math.min(nextMouseIn, nextKeyIn);
+      
+      nextEventSpan.textContent = `Next event in: ${Math.ceil(nextEvent / 1000)}s`;
+    }
+    
+    // Toggle active state
+    function toggleActive() {
+      active = !active;
+      
+      if (active) {
+        statusElement.textContent = "Active";
+        statusElement.className = "text-green-600";
+        toggleBtn.textContent = "Pause";
+        
+        // Restart intervals
+        startIntervals();
+        logEvent("Simulation activated");
+      } else {
+        statusElement.textContent = "Paused";
+        statusElement.className = "text-red-600";
+        toggleBtn.textContent = "Resume";
+        
+        // Clear intervals
+        clearInterval(mouseInterval);
+        clearInterval(keyInterval);
+        clearInterval(updateInterval);
+        logEvent("Simulation paused");
+      }
+    }
+    
+    // Start all intervals
+    function startIntervals() {
+      mouseInterval = setInterval(simulateMouseMove, 15000); // every 15 seconds
+      keyInterval = setInterval(simulateKeyPress, 60000); // every 60 seconds
+      updateInterval = setInterval(updateNextEventTime, 1000); // update countdown every second
+      
+      // Trigger initial events
+      simulateMouseMove();
+      updateNextEventTime();
+    }
+    
+    // Setup event listeners
+    toggleBtn.addEventListener('click', toggleActive);
+    
+    // Initial setup
+    startIntervals();
+    logEvent("Application started");
   </script>
-
 </body>
 </html>
