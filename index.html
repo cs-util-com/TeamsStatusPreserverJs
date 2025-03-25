@@ -43,6 +43,15 @@ additional explanations of what you change are nice to have but not necessary.
       <button id="settingsBtn" class="ml-auto px-4 py-2 bg-gray-600 text-white rounded font-mono cursor-pointer hover:bg-gray-700">Settings</button>
     </div>
     
+    <!-- Teams Quick Actions -->
+    <div class="mt-4 pt-4 border-t border-gray-300">
+      <h3 class="font-bold mb-2">Microsoft Teams Actions:</h3>
+      <div class="flex flex-wrap gap-2">
+        <button id="launchTeamsBtn" class="px-4 py-2 bg-indigo-600 text-white rounded font-mono cursor-pointer hover:bg-indigo-700">Launch Teams</button>
+        <button id="newMeetingBtn" class="px-4 py-2 bg-purple-600 text-white rounded font-mono cursor-pointer hover:bg-purple-700">New Meeting</button>
+      </div>
+    </div>
+    
     <h3 class="mt-4 font-bold">Recent Activity:</h3>
     <div id="eventLog" class="h-24 overflow-y-auto border border-gray-300 p-2.5 mt-2.5 text-xs"></div>
   </div>
@@ -136,6 +145,8 @@ additional explanations of what you change are nice to have but not necessary.
     const saveSettings = document.getElementById('saveSettings');
     const freqSlider = document.getElementById('eventFrequency');
     const freqValue = document.getElementById('freqValue');
+    const launchTeamsBtn = document.getElementById('launchTeamsBtn');
+    const newMeetingBtn = document.getElementById('newMeetingBtn');
     
     // Load saved settings if available
     loadSettings();
@@ -193,6 +204,17 @@ additional explanations of what you change are nice to have but not necessary.
         x: Math.floor(Math.random() * window.innerWidth),
         y: Math.floor(Math.random() * window.innerHeight)
       };
+    }
+
+    // Microsoft Teams URL handlers
+    function launchTeams() {
+      window.open('https://teams.microsoft.com/', '_blank');
+      logEvent("Microsoft Teams launched in new tab");
+    }
+    
+    function createNewMeeting() {
+      window.open('https://teams.microsoft.com/_#/calendarv2/createmeeting', '_blank');
+      logEvent("Microsoft Teams meeting creation opened in new tab");
     }
 
     // Simulates mouse movement with random positions
@@ -431,6 +453,10 @@ additional explanations of what you change are nice to have but not necessary.
     freqSlider.addEventListener('input', () => {
       freqValue.textContent = `${freqSlider.value}s`;
     });
+    
+    // Microsoft Teams button event listeners
+    launchTeamsBtn.addEventListener('click', launchTeams);
+    newMeetingBtn.addEventListener('click', createNewMeeting);
     
     // Initial setup
     startIntervals();
